@@ -29,6 +29,13 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
+      # Import GPG private key for decryption
+      - name: Import GPG private key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" > private.key
+          gpg --batch --import private.key
+          rm private.key
+
       # Runs a single command using the runners shell
       - name: Run script to download tiles and encrypt tiles
         run: bash download_and_commit.sh
