@@ -3,7 +3,9 @@
 # Decrypt the file
 # --batch to prevent interactive command
 # --yes to assume "yes" for questions
-gpg --quiet --batch --yes --decrypt --passphrase="$LINK_PASSPHRASE" --output links links.gpg
+# --pinentry-mode loopback to avoid ioctl issues in CI
+export GPG_TTY=$(tty)
+gpg --quiet --batch --yes --pinentry-mode loopback --passphrase="$LINK_PASSPHRASE" --decrypt --output links links.gpg
 
 mkdir processing
 
@@ -12,6 +14,7 @@ python download_links.py
 
 cd processing
 ls | xargs -n 1 gpg -e -f ../tiles.asc
+mkdir -p ../automatic
 mv *.gpg ../automatic
 
 cd ../
