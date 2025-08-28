@@ -15,7 +15,14 @@ python download_links.py
 cd processing
 find . -name "*.png" -exec gpg -e -f ../tiles.asc {} \;
 mkdir -p ../automatic
-find . -name "*.gpg" -exec mv {} ../automatic/ \;
+# Copy the entire folder structure with .gpg files to automatic, preserving directory structure
+find . -name "*.gpg" | while read file; do
+    # Create the directory structure in automatic
+    dir=$(dirname "$file")
+    mkdir -p "../automatic/$dir"
+    # Move the file preserving the path
+    mv "$file" "../automatic/$file"
+done
 
 cd ../
 

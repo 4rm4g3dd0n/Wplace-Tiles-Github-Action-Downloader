@@ -1,8 +1,8 @@
 import os
 import glob
 
-# Find all .gpg files in the automatic directory
-gpg_files = glob.glob('automatic/*.gpg')
+# Find all .gpg files in the automatic directory recursively
+gpg_files = glob.glob('automatic/**/*.gpg', recursive=True)
 decrypted_files = []
 
 # Decrypt all .gpg files
@@ -11,13 +11,15 @@ for gpg_file in gpg_files:
     os.system(f'gpg --quiet --batch --yes --decrypt --passphrase="tiles" --output {output_file} {gpg_file}')
     decrypted_files.append(output_file)
 
-# Group files by their source folder (first part of filename)
+# Group files by their source folder number
 dpngs = {}
 for png_file in decrypted_files:
-    # Extract the folder number from the filename
-    basename = os.path.basename(png_file)
-    # The folder number should be at the start of the filename
-    folder_num = basename.split('_')[0] if '_' in basename else '0'
+    # Extract the folder number from the path: automatic/./0/filename.png -> folder number is 0
+    path_parts = png_file.split('/')
+    if len(path_parts) >= 3:
+        folder_num = path_parts[2]  # automatic/./0/filename.png
+    else:
+        folder_num = '0'  # fallback
     
     if folder_num not in dpngs:
         dpngs[folder_num] = []
