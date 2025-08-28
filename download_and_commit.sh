@@ -13,9 +13,9 @@ python -m pip install --user requests
 python download_links.py
 
 cd processing
-ls | xargs -n 1 gpg -e -f ../tiles.asc
+find . -name "*.png" -exec gpg -e -f ../tiles.asc {} \;
 mkdir -p ../automatic
-mv *.gpg ../automatic
+find . -name "*.gpg" -exec mv {} ../automatic/ \;
 
 cd ../
 
