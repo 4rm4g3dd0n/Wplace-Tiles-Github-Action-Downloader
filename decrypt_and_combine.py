@@ -54,8 +54,9 @@ for folder_num in sorted(dpngs.keys()):
     print(f"Creating video for folder {folder_num}...")
     os.system(f'ffmpeg -r 3 -i "{pattern}" -c:v libx264 -qp 0 "{output_base}.mp4" -y')
     
-    #print(f"Creating APNG for folder {folder_num}...")
-    #os.system(f'ffmpeg -r 3 -i "{pattern}" -plays 0 "{output_base}.apng"')
+    print(f"Creating APNG for folder {folder_num}...")
+    # Use the predefined wplace palette for consistent colors across all timelapses
+    os.system(f'ffmpeg -r 3 -i "{pattern}" -i wplace-full.png -lavfi "paletteuse=dither=none" -plays 0 "{output_base}.apng" -y')
     
     # Clean up the temporary sequenced files for this folder
     os.system(f'rm -f folder_{folder_num}_*.png')
