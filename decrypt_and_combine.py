@@ -14,10 +14,10 @@ for gpg_file in gpg_files:
 # Group files by their source folder number
 dpngs = {}
 for png_file in decrypted_files:
-    # Extract the folder number from the path: automatic/./0/filename.png -> folder number is 0
+    # Extract the folder number from the path: automatic/0/filename.png -> folder number is 0
     path_parts = png_file.split('/')
-    if len(path_parts) >= 3:
-        folder_num = path_parts[2]  # automatic/./0/filename.png
+    if len(path_parts) >= 3 and path_parts[0] == 'automatic':
+        folder_num = path_parts[1]  # automatic/0/filename.png
     else:
         folder_num = '0'  # fallback
     
@@ -29,34 +29,41 @@ for png_file in decrypted_files:
 for folder_num in dpngs:
     dpngs[folder_num].sort()
 
-if len(dpngs) > 1:
-    # Multiple folders - combine images side by side for each timestamp
-    max_length = max(len(group) for group in dpngs.values())
+# Process each folder separately to create individual timelapses
+for folder_num in sorted(dpngs.keys()):
+    folder_files = dpngs[folder_num]
+    if not folder_files:
+        continue
     
-    for i in range(max_length):
-        group_files = []
-        for folder_num in sorted(dpngs.keys()):
-            if i < len(dpngs[folder_num]):
-                group_files.append(dpngs[folder_num][i])
-        
-        if len(group_files) > 1:
-            os.system(f'convert {" ".join(group_files)} +append {"%05d.png"%i}')
-        elif len(group_files) == 1:
-            os.rename(group_files[0], '%05d.png'%i)
-else:
-    # Single folder - just rename files sequentially
-    folder_files = list(dpngs.values())[0]
+    print(f"Processing folder {folder_num} with {len(folder_files)} images...")
+    
+    # Create sequentially numbered files for this folder
     for i, png_file in enumerate(folder_files):
-        os.rename(png_file, '%05d.png'%i)
+        os.system(f'cp "{png_file}" folder_{folder_num}_{"%05d.png"%i}')
+    
+    # Get first and last timestamps for naming
+    first_file = os.path.basename(folder_files[0])
+    last_file = os.path.basename(folder_files[-1])
+    first_time = first_file.replace('.png', '')
+    last_time = last_file.replace('.png', '')
+    
+    # Create video and APNG for this folder
+    pattern = f'folder_{folder_num}_%05d.png'
+    output_base = f'folder_{folder_num}_{first_time}_to_{last_time}'
+    
+    print(f"Creating video for folder {folder_num}...")
+    os.system(f'ffmpeg -r 3 -i "{pattern}" -c:v libx264 -qp 0 "{output_base}.mp4" -y')
+    
+    #print(f"Creating APNG for folder {folder_num}...")
+    #os.system(f'ffmpeg -r 3 -i "{pattern}" -plays 0 "{output_base}.apng"')
+    
+    # Clean up the temporary sequenced files for this folder
+    os.system(f'rm -f folder_{folder_num}_*.png')
 
-# Create video and APNG from the sequenced images
-if gpg_files:
-    first_file = os.path.basename(gpg_files[0])
-    last_file = os.path.basename(gpg_files[-1])
-    
-    # Extract timestamps for naming
-    first_time = first_file.replace('.gpg', '')
-    last_time = last_file.replace('.gpg', '')
-    
-    os.system(f'ffmpeg -r 3 -i "%05d.png" -c:v libx264 -qp 0 {first_time}_{last_time}.mp4')
-    os.system(f'ffmpeg -r 3 -i "%05d.png" -plays 0 {first_time}_{last_time}.apng')
+# Clean up all decrypted PNG files in automatic folders
+print("Cleaning up decrypted files...")
+for decrypted_file in decrypted_files:
+    if os.path.exists(decrypted_file):
+        os.remove(decrypted_file)
+
+print("All folders processed!")
